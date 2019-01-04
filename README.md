@@ -195,7 +195,7 @@ REST #2: bucket-name.s3.region.amazonaws.com
 Website: bucket-name.s3-website.region.amazonaws.com
 ```
 
-Reference
+#### Reference
 
 https://docs.aws.amazon.com/AmazonS3/latest/dev/WebsiteEndpoints.html
 
@@ -301,20 +301,20 @@ AWS Console > CloudFormation
     PrimaryDomainName	site.sgf-aws.org
     ```
 
-Reference
+#### Reference
 
 https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/dns-failover-types.html#dns-failover-types-active-passive-one-resource
 
 https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset.html
 
-https://docs.amazonaws.cn/en_us/AWSCloudFormation/latest/UserGuide/quickref-route53.html#scenario-route53-recordset-by-host
+https://docs.aws.amazon.com/en_us/AWSCloudFormation/latest/UserGuide/quickref-route53.html#scenario-route53-recordset-by-host
 
 
 ## Authors
 
 * **Jason Klein** - *Initial work* - [jason-klein](https://github.com/jason-klein)
 
-See also the list of [contributors](https://github.com/jason-klein/route53-active-passive-failover/contributors) who participated in this project.
+See also the list of [contributors](https://github.com/sgf-aws/route53-active-passive-failover/contributors) who participated in this project.
 
 ## License
 
