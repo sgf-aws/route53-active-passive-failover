@@ -72,14 +72,14 @@ can use to browse to each website separately for testing purposes.
 
 AWS Console > [ACM](https://console.aws.amazon.com/acm/home?region=us-east-1#/)
 
-Redirect Certificate - Website Domain Names:
+Request **Redirect Certificate** with these Website Domain Names:
 ```
 redirect.sgf-aws.org
 site.sgf-aws.org
 www.site.sgf-aws.org
 ```
 
-Secondary Certificate - Website Domain Names:
+Request **Secondary Certificate** with these Website Domain Names:
 ```
 secondary.sgf-aws.org
 ```
@@ -116,6 +116,7 @@ AWS Console > [CloudFormation](https://console.aws.amazon.com/cloudformation/hom
     ```
     Upload Template File:
     static-websites-with-cloudfront.yml
+
     NEXT
     ```
 
@@ -129,12 +130,14 @@ AWS Console > [CloudFormation](https://console.aws.amazon.com/cloudformation/hom
 
     Secondary Certificate
     arn:aws:acm:us-east-1:347103861163:certificate/b88b7971-3af8-479d-a937-3761c899bf74
+
     NEXT
     ```
 
 1. Review Stack Options
     ```
     Accept Defaults
+
     NEXT
     ```
 
@@ -250,7 +253,8 @@ AWS Console > CloudFormation
 
     ```
     Upload Template File:
-    static-websites-with-cloudfront.yml
+    dns-failover-active-passive.yml
+
     NEXT
     ```
 
@@ -258,19 +262,27 @@ AWS Console > CloudFormation
 
     ```
     Stack Name:
-    static-sites
+    dns-failover
 
-    Redirect Certificate
-    arn:aws:acm:us-east-1:347103861163:certificate/61a05d38-8002-4481-aadb-10dee67e213f
+    Hosted Zone Name
+    sgf-aws.org
 
-    Secondary Certificate
-    arn:aws:acm:us-east-1:347103861163:certificate/b88b7971-3af8-479d-a937-3761c899bf74
+    Primary Domain Name
+    site.sgf-aws.org
+
+    Active Domain Name
+    primary.sgf-aws.org
+
+    Passive Domain Name
+    redirect.sgf-aws.org
+
     NEXT
     ```
 
 1. Review Stack Options
     ```
     Accept Defaults
+
     NEXT
     ```
 
@@ -278,9 +290,6 @@ AWS Console > CloudFormation
     ```
     CREATE STACK
     ```
-
-    Wait 15-30 minutes for this to complete. It can take a LONG time to
-    create the CloudFront distributions.
 
 1. Stack Outputs
 
