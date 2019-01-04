@@ -15,11 +15,20 @@ Be aware that DNS failover is NOT instant! When the Primary website
 fails, failover can take several minutes during which time visitors
 will receive an error when trying to visit the Primary website.
 
+* Trigger DNS failover by visiting sample Primary site
+([primary.sgf-aws.org](primary.sgf-aws.org)) and toggling the
+"Change Page Status" link between OK (200) and Forbidden (403).
+
+* Monitor DNS failover by visiting sample Live site
+([site.sgf-aws.org](site.sgf-aws.org)). When failover occurs, you will
+be redirected to a Secondary site ([secondary.sgf-aws.org](secondary.sgf-aws.org))
+with a link back to the Live site.
+
 * Route 53 DNS records failover in 75-90 seconds. Potentially decrease
 this time to 25-30 seconds by changing Health Check interval from
 30 seconds to 10 seconds for additional $1/mo.
 
-* DNS servers propogate changes in about 60 seconds due to TTL of
+* DNS servers propagate changes in about 60 seconds due to TTL of
 60 seconds. Decreasing TTL further is not recommended.
 
 * CloudFront and S3 are configured to prevent web browser from caching
@@ -100,7 +109,7 @@ This stack will create a Primary and Secondary Bucket in S3. This stack
 will also create a Primary and Secondary CloudFront Endpoint for
 serving S3 content.
 
-AWS Console > CloudFormation > Create Stack > Upload a Template File
+AWS Console > [CloudFormation](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks)
 
 1. Create Stack
 
@@ -153,7 +162,7 @@ AWS Console > CloudFormation > Create Stack > Upload a Template File
 
 ### Upload Website Index Pages
 
-AWS Console > S3 > BUCKET > Upload
+AWS Console > [S3](https://s3.console.aws.amazon.com/s3/home?region=us-east-1) > BUCKET > Upload
 
 Manually Upload "index.html" to Redirect and Secondary S3 bucket via AWS Console.
 See Stack Outputs for bucket names. Accept default settings during upload.
