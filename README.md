@@ -16,12 +16,12 @@ fails, failover can take several minutes during which time visitors
 will receive an error when trying to visit the Primary website.
 
 * Trigger DNS failover by visiting sample Primary site
-([primary.sgf-aws.org](primary.sgf-aws.org)) and toggling the
+([primary.sgf-aws.org](https://primary.sgf-aws.org)) and toggling the
 "Change Page Status" link between OK (200) and Forbidden (403).
 
 * Monitor DNS failover by visiting sample Live site
-([site.sgf-aws.org](site.sgf-aws.org)). When failover occurs, you will
-be redirected to a Secondary site ([secondary.sgf-aws.org](secondary.sgf-aws.org))
+([site.sgf-aws.org](https://site.sgf-aws.org)). When failover occurs, you will
+be redirected to a Secondary site ([secondary.sgf-aws.org](https://secondary.sgf-aws.org))
 with a link back to the Live site.
 
 * Route 53 DNS records failover in 75-90 seconds. Potentially decrease
