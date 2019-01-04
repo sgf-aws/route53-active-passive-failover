@@ -1,0 +1,136 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Resources for DNS Failover (Active/Passive Websites) on Route 53
+
+###############################################################################
+Metadata:
+###############################################################################
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "Hostnames"
+        Parameters:
+          - HostedZoneDomainName
+          - PrimaryDomainName
+          - ActiveDomainName
+          - PassiveDomainName
+    ParameterLabels:
+      HostedZoneDomainName:
+        default: "Hosted Zone Name"
+      PrimaryDomainName:
+        default: "Primary Domain Name"
+      ActiveDomainName:
+        default: "Active Domain Name"
+      PassiveDomainName:
+        default: "Passive Domain Name"
+
+###############################################################################
+Parameters:
+###############################################################################
+
+  HostedZoneDomainName:
+    Type: String
+    Description: The Hosted Zone domain name.
+    Default: sgf-aws.org
+
+  PrimaryDomainName:
+    Type: String
+    Description: The Primary website domain name. Prefix "www." will be added.
+    Default: site.sgf-aws.org
+
+  ActiveDomainName:
+    Type: String
+    Description: The Active website domain name.
+    Default: primary.sgf-aws.org
+
+  PassiveDomainName:
+    Type: String
+    Description: The Passive website domain name.
+    Default: redirect.sgf-aws.org
+
+###############################################################################
+Resources:
+###############################################################################
+
+  # DNS Health Check monitors "primary.sgf-aws.org" via HTTPS ($1.50/mo)
+  ActiveHealthCheck:
+    Type: AWS::Route53::HealthCheck
+    Properties:
+      HealthCheckConfig:
+        Type: "HTTPS"
+        FullyQualifiedDomainName: !Ref ActiveDomainName
+        RequestInterval: "30"
+        FailureThreshold: "3"
+        EnableSNI: true
+      HealthCheckTags:
+        - Key: "Name"
+          Value: !Join [ "", [ !Ref ActiveDomainName, "-https" ] ]
+
+  # DNS Record "site.sgf-aws.org" CNAME to "primary.sgf-aws.org" (PRIMARY)
+  ActiveRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Join [ "", [ !Ref HostedZoneDomainName, "." ] ]
+      Name: !Join [ "", [ !Ref PrimaryDomainName, "." ] ]
+      Type: CNAME
+      TTL: '30'
+      ResourceRecords:
+        - !Join [ "", [ !Ref ActiveDomainName, "." ] ]
+      Failover: PRIMARY
+      SetIdentifier: !Join [ "", [ !Ref ActiveDomainName, "-Primary" ] ]
+      HealthCheckId: !Ref ActiveHealthCheck
+
+  # DNS Record "site.sgf-aws.org" CNAME to "redirect.sgf-aws.org" (SECONDARY)
+  PassiveRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Join [ "", [ !Ref HostedZoneDomainName, "." ] ]
+      Name: !Join [ "", [ !Ref PrimaryDomainName, "." ] ]
+      Type: CNAME
+      TTL: '30'
+      ResourceRecords:
+        - !Join [ "", [ !Ref PassiveDomainName, "." ] ]
+      Failover: SECONDARY
+      SetIdentifier: !Join [ "", [ !Ref PassiveDomainName, "-Secondary" ] ]
+
+  ActiveWebRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Join [ "", [ !Ref HostedZoneDomainName, "." ] ]
+      Name: !Join [ "", [ "www.", !Ref PrimaryDomainName, "." ] ]
+      Type: CNAME
+      TTL: '30'
+      ResourceRecords:
+        - !Join [ "", [ !Ref ActiveDomainName, "." ] ]
+      Failover: PRIMARY
+      SetIdentifier: !Join [ "", [ !Ref ActiveDomainName, "-Primary" ] ]
+      HealthCheckId: !Ref ActiveHealthCheck
+
+  PassiveWebRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Join [ "", [ !Ref HostedZoneDomainName, "." ] ]
+      Name: !Join [ "", [ "www.", !Ref PrimaryDomainName, "." ] ]
+      Type: CNAME
+      TTL: '30'
+      ResourceRecords:
+        - !Join [ "", [ !Ref PassiveDomainName, "." ] ]
+      Failover: SECONDARY
+      SetIdentifier: !Join [ "", [ !Ref PassiveDomainName, "-Secondary" ] ]
+
+###############################################################################
+Outputs:
+###############################################################################
+
+  PrimaryDomainName:
+    Value: !Ref 'PrimaryDomainName'
+    Description: Primary Domain Name
+
+  ActiveDomainName:
+    Value: !Ref 'ActiveDomainName'
+    Description: Active Domain Name
+
+  PassiveDomainName:
+    Value: !Ref 'PassiveDomainName'
+    Description: Passive Domain Name

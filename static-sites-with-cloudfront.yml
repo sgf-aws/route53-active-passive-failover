@@ -1,0 +1,223 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Resources for hosting static websites on S3 and CloudFront
+###############################################################################
+Parameters:
+###############################################################################
+
+  CloudFrontPriceClass:
+    Type: String
+    Description: The CloudFront distribution price class (100 is US/EU only)
+    Default: 'PriceClass_100'
+    AllowedValues:
+      - 'PriceClass_100'
+      - 'PriceClass_200'
+      - 'PriceClass_All'
+
+  PrimaryDomainName:
+    Type: String
+    Description: The Primary website domain name.
+    Default: site.sgf-aws.org
+
+  RedirectAcmCertificateArn:
+    Type: String
+    Description: >
+      The ARN of the SSL certificate for the Redirect CloudFront distribution.
+
+  RedirectDomainName:
+    Type: String
+    Description: The Redirect website domain name.
+    Default: redirect.sgf-aws.org
+
+  SecondaryAcmCertificateArn:
+    Type: String
+    Description: >
+      The ARN of the SSL certificate for the Secondary CloudFront distribution.
+
+  SecondaryDomainName:
+    Type: String
+    Description: The Secondary website domain name.
+    Default: secondary.sgf-aws.org
+
+###############################################################################
+Resources:
+###############################################################################
+
+  RedirectCloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Ref RedirectDomainName
+          - !Ref PrimaryDomainName
+          - !Join [ "", [ "www.", !Ref PrimaryDomainName ] ]
+        DefaultCacheBehavior:
+          Compress: true
+          ForwardedValues:
+            QueryString: false
+          TargetOriginId: the-s3-bucket
+          ViewerProtocolPolicy: redirect-to-https
+          # Adjust cache TTL
+          DefaultTTL: 30
+          MaxTTL: 60
+          MinTTL: 0
+          # Need to expire immediately? S3 content must return the following header:
+          # Cache-Control: max-age=0
+        DefaultRootObject: index.html
+        CustomErrorResponses:
+          - ErrorCachingMinTTL: 300
+            ErrorCode: 403
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+          - DomainName:
+              !Join [ "", [ !Ref RedirectBucket, ".s3.amazonaws.com" ] ]
+            Id: the-s3-bucket
+            S3OriginConfig:
+              OriginAccessIdentity:
+                !Join [ "", [ "origin-access-identity/cloudfront/", !Ref RedirectCloudFrontOriginAccessIdentity ] ]
+        PriceClass: !Ref CloudFrontPriceClass
+        ViewerCertificate:
+          AcmCertificateArn: !Ref RedirectAcmCertificateArn
+          MinimumProtocolVersion: TLSv1
+          SslSupportMethod: sni-only
+      Tags:
+        - Key: Domain
+          Value: !Ref RedirectDomainName
+
+  RedirectCloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'CloudFront OAI for ${RedirectDomainName}'
+
+  RedirectBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          -
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Domain
+          Value: !Ref RedirectDomainName
+
+  RedirectBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref RedirectBucket
+      PolicyDocument:
+        Statement:
+          -
+            Action:
+              - s3:GetObject
+            Effect: Allow
+            Resource: !Join [ "", [ "arn:aws:s3:::", !Ref RedirectBucket, "/*" ] ]
+            Principal:
+              CanonicalUser: !GetAtt RedirectCloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+  SecondaryCloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Ref SecondaryDomainName
+        DefaultCacheBehavior:
+          Compress: true
+          ForwardedValues:
+            QueryString: false
+          TargetOriginId: the-s3-bucket
+          ViewerProtocolPolicy: redirect-to-https
+          # Adjust cache TTL
+          DefaultTTL: 300
+          MaxTTL: 3600
+          MinTTL: 0
+          # Need to expire immediately? S3 content must return the following header:
+          # Cache-Control: max-age=0
+        DefaultRootObject: index.html
+        CustomErrorResponses:
+          - ErrorCachingMinTTL: 300
+            ErrorCode: 403
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+          - DomainName:
+              !Join [ "", [ !Ref SecondaryBucket, ".s3.amazonaws.com" ] ]
+            Id: the-s3-bucket
+            S3OriginConfig:
+              OriginAccessIdentity:
+                !Join [ "", [ "origin-access-identity/cloudfront/", !Ref SecondaryCloudFrontOriginAccessIdentity ] ]
+        PriceClass: !Ref CloudFrontPriceClass
+        ViewerCertificate:
+          AcmCertificateArn: !Ref SecondaryAcmCertificateArn
+          MinimumProtocolVersion: TLSv1
+          SslSupportMethod: sni-only
+      Tags:
+        - Key: Domain
+          Value: !Ref SecondaryDomainName
+
+  SecondaryCloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'CloudFront OAI for ${SecondaryDomainName}'
+
+  SecondaryBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          -
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Domain
+          Value: !Ref SecondaryDomainName
+
+  SecondaryBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SecondaryBucket
+      PolicyDocument:
+        Statement:
+          -
+            Action:
+              - s3:GetObject
+            Effect: Allow
+            Resource: !Join [ "", [ "arn:aws:s3:::", !Ref SecondaryBucket, "/*" ] ]
+            Principal:
+              CanonicalUser: !GetAtt SecondaryCloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+###############################################################################
+Outputs:
+###############################################################################
+
+  PrimaryDomainName:
+    Value: !Ref 'PrimaryDomainName'
+    Description: Primary Domain Name
+
+  RedirectBucketName:
+    Value: !Ref 'RedirectBucket'
+    Description: Name of Redirect S3 bucket to hold website content (upload index.html here)
+  RedirectCloudFrontEndpoint:
+    Value: !GetAtt [RedirectCloudFrontDistribution, DomainName]
+    Description: Endpoint for Redirect CloudFront distribution
+  RedirectDomainName:
+    Value: !Ref 'RedirectDomainName'
+    Description: Redirect Domain Name
+
+  SecondaryBucketName:
+    Value: !Ref 'SecondaryBucket'
+    Description: Name of Secondary S3 bucket to hold website content (upload index.html here)
+  SecondaryCloudFrontEndpoint:
+    Value: !GetAtt [SecondaryCloudFrontDistribution, DomainName]
+    Description: Endpoint for Secondary CloudFront distribution
+  SecondaryDomainName:
+    Value: !Ref 'SecondaryDomainName'
+    Description: Secondary Domain Name
